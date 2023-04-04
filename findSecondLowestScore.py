@@ -1,43 +1,53 @@
-"""
-This script expects the user to provide the names and scores of the students as command line arguments.
-For example, if the script is called second_lowest_score.py, you could run it like this: 
-python second_lowest_score.py Alice 70 Bob 80 Charlie 60 Dave 90
+from typing import Dict, List
 
-This would produce the following output:
-Alice
-Bob
-Dave
-"""
 
-import sys
+def calculate_average_score(n: int, marks: Dict[str, List[float]], query_name: str) -> float:
+    """
+    Calculates the average score for the given student's name.
 
-# Initialize two empty lists to store student names and scores
-students = []
-scores = []
+    Args:
+        n (int): The number of students.
+        marks (Dict[str, List[float]]): A dictionary containing the name and scores of each student.
+        query_name (str): The name of the student whose average score is to be calculated.
 
-# Iterate over the command line arguments, skipping the first argument which is the name of the script itself
-for arg in sys.argv[1:]:
-    # Split the argument into name and score
-    name, score = arg.split()
-    # Convert the score to a float and append the score to the 'scores' list
-    score = float(score)
-    scores.append(score)
-    # Append the name and score as a sub-list to the 'students' list
-    students.append([name, score])
+    Returns:
+        float: The average score of the given student.
+    """
+    if query_name not in marks:
+        raise ValueError(f"{query_name} is not a valid student name.")
 
-# Count the number of occurrences of the lowest score in the 'scores' list
-count = scores.count(min(scores))
-# Remove the lowest scores from the 'scores' list
-for i in range(count):
-    scores.remove(min(scores))
+    scores = marks[query_name]
+    return round(sum(scores) / len(scores), 2)
 
-# The second-lowest score is now the new minimum score in the 'scores' list
-secondHigh = min(scores)
 
-# Sort the 'students' list in ascending order of name
-students.sort()
-# Create a new list 'output' that contains all sub-lists in the 'students' list whose second element (i.e., score) is equal to 'secondHigh'
-output = [x for x in students if x[1] == secondHigh]
-# Iterate over the 'output' list and print the first element (i.e., name) of each sub-list
-for i in output:
-    print(i[0])
+if __name__ == '__main__':
+    # Prompt the user to input the number of students
+    n = int(input("Enter the number of students: "))
+
+    # Initialize an empty dictionary to store the name and scores of each student
+    marks = {}
+
+    # Prompt the user to input the name and scores of each student
+    for i in range(n):
+        name = input(f"Enter the name of student #{i + 1}: ")
+        score_str = input(f"Enter the scores of {name} (comma-separated): ")
+
+        # Convert the score string to a list of floats
+        try:
+            scores = [float(score.strip()) for score in score_str.split(",")]
+        except ValueError:
+            print(f"Invalid input: {score_str}. Scores must be comma-separated numbers.")
+            continue
+
+        # Add the name and scores to the marks dictionary
+        marks[name] = scores
+
+    # Prompt the user to input the name of the student to calculate the average score for
+    query_name = input("Enter the name of the student to calculate the average score for: ")
+
+    # Calculate and print the average score for the given student
+    try:
+        avg_score = calculate_average_score(n, marks, query_name)
+        print(f"The average score for {query_name} is: {avg_score:.2f}")
+    except ValueError as e:
+        print(str(e))
