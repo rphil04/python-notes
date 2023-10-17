@@ -14,7 +14,7 @@
 
 .NOTES
     File Name      : preprocess_stats.py
-    Author         : 
+    Author         :
     Prerequisite   : Python 3.x
                     pandas library for Python
 
@@ -49,6 +49,13 @@ try:
 
     # Filter rows where 'Player' column is not empty
     df = df.dropna(subset=['Player'], how='all')
+
+    # Round the numerical columns to the nearest whole number
+    numerical_columns = ['GP', 'G', 'A', 'PTS', 'PIM', 'Plus/Minus', 'Points per game', 'Shorthanded Goals',
+                         'Hits', 'Faceoff Wins', 'Faceoffs', 'Blocked Shots', 'Faceoff Wins %', 'Goals % per shot',
+                         'Interceptions', 'Giveaways', 'Takeaways', 'Passes Attempted', 'Passes Complete', 'Hat Tricks']
+
+    df[numerical_columns] = df[numerical_columns].round()
 
     # Display the DataFrame with the desired formatting
     pd.set_option('display.colheader_justify', 'center')  # Center-align column headers
@@ -106,6 +113,13 @@ try:
         top_players = df.sort_values(by=stat_column, ascending=False).head(num_players)
         top_players['Rank'] = top_players[stat_column].rank(ascending=False, method='min', na_option='bottom').fillna(0).astype(int)
         print(top_players[['Rank', 'Player', stat_column]].to_string(index=False))
+
+    # Specify the path for the new Excel file
+    output_excel_file = '/Users/robbie/Desktop/processed_stats.xlsx'
+
+    # Save the DataFrame to the new Excel file
+    df.to_excel(output_excel_file, index=False)
+    print(f"Data saved to {output_excel_file}")
 
 except Exception as e:
     print(f"An error occurred: {e}")
