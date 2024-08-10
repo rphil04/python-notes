@@ -1,3 +1,59 @@
+"""
+===================================================
+Network Device Scanner
+===================================================
+Author: Noytou
+Date: 2024-10-06
+Version: 1.0
+
+Description:
+------------
+This Python script scans the internal network to identify connected devices,
+including their IP addresses, MAC addresses, and hostnames (if available).
+The script compares the current scan results with the previous scan to
+identify new or removed devices. The results are stored in a specified
+directory for future analysis.
+
+Features:
+---------
+- Scans a specified IP range to discover devices on the network.
+- Retrieves IP addresses, MAC addresses, and hostnames (using DNS and NetBIOS).
+- Compares the current scan with the previous one to detect new and removed devices.
+- Saves the scan results in a JSON file for future reference.
+
+Usage:
+------
+- Ensure you have Python 3.x installed.
+- Install the required libraries: scapy, socket, subprocess.
+- Customize the IP range according to your network configuration.
+- Run the script with appropriate permissions (e.g., sudo) for network scanning.
+- View the scan results in the /home/scans directory.
+
+Dependencies:
+-------------
+- Python 3.x
+- scapy
+- socket
+- nbtscan (optional, for NetBIOS name resolution)
+
+Setup:
+------
+- To install scapy, use: pip install scapy
+- To install nbtscan, use: sudo apt-get install nbtscan
+
+IP Range:
+---------
+- The IP range should be set according to your network.
+  Example for 192.168.0.1 router: "192.168.0.1/24"
+
+Output:
+-------
+- The results are saved to /home/scans/previous_scan.json.
+
+===================================================
+"""
+
+
 import scapy.all as scapy
 import socket
 import json
