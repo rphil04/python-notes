@@ -76,6 +76,7 @@ def calculate_time(skaters, shift_duration):
     print(f"  Time on ice per Player: \033[0;32m{time_on_ice_2:.2f} minutes\033[0m")
     print(f"  Expected shifts per Player: \033[0;34m{shifts_per_player:.2f} shifts\033[0m")
 
+
 def main():
     print("Hockey Lineup Ice Time Calculator")
     try:
@@ -89,6 +90,7 @@ def main():
 
     except ValueError:
         print("Please enter valid integers for skaters and shift duration.")
+
 
 if __name__ == "__main__":
     main()
