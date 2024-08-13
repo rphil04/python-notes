@@ -4,27 +4,24 @@
 # =================================
 #
 # This script calculates the expected time on ice per player based on the number of
-# skaters available and the shift duration. The script provides two strategies:
+# skaters available. The script only provides one strategy:
 #
-# Strategy 1: Set Positions
+# Strategy: Set Positions
 #     Divides skaters into forwards and defense, then calculates the time
 #     on ice for each position.
 #
-# Strategy 2: No Set Positions
-#     Assumes all skaters rotate through shifts equally, regardless of position.
-#
 # Functions:
 # ----------
-# calculate_time(skaters, shift_duration)
-#     Calculates and prints the time on ice for forwards, defense, and for a scenario
-#     without set positions.
+# calculate_time(skaters)
+#     Calculates and prints the time on ice for forwards and defense.
 #
 # Usage:
 # ------
-# Run the script and provide the number of skaters and shift duration when prompted.
+# Run the script and provide the number of skaters when prompted.
 
-def calculate_time(skaters, shift_duration):
-    game_duration = 60  # Default game duration in minutes
+def calculate_time(skaters):
+    game_duration = 60  # Game duration in minutes
+    total_game_time = game_duration * 60  # Convert game duration to seconds
 
     # Calculate the number of forwards and defense based on skaters
     if skaters == 5:
@@ -49,26 +46,17 @@ def calculate_time(skaters, shift_duration):
         forwards = skaters * 9 // 15
         defense = skaters - forwards
 
-    # Strategy 1: Set Positions
-    total_game_time = game_duration * 60  # Convert game duration to seconds
+    # Strategy: Set Positions
 
-    # Time on ice calculation for forwards
-    time_on_ice_forward = total_game_time / (forwards * shift_duration)
+    # Calculate time on ice per forward and defenseman in seconds
+    time_on_ice_forward = total_game_time / (forwards / 3)
+    time_on_ice_defense = total_game_time / (defense / 2)
 
-    # Time on ice calculation for defense
-    time_on_ice_defense = total_game_time / (defense * shift_duration)
-
-    print("\033[0;32mStrategy 1: Set Positions\033[0m")
+    print("\033[0;32mStrategy: Set Positions\033[0m")
     print(f"  Number of Forwards: \033[0;32m{forwards}\033[0m")
-    print(f"  Time on ice per Forward: \033[0;32m{time_on_ice_forward:.2f} minutes\033[0m")
+    print(f"  Time on ice per Forward: \033[0;32m{time_on_ice_forward / 60:.2f} minutes\033[0m")  # Converted to minutes
     print(f"  Number of Defense: \033[0;34m{defense}\033[0m")
-    print(f"  Time on ice per Defense: \033[0;34m{time_on_ice_defense:.2f} minutes\033[0m")
-
-    # Strategy 2: No Set Positions
-    time_on_ice_2 = total_game_time / (skaters * shift_duration)
-
-    print("\n\033[0;34mStrategy 2: No Set Positions\033[0m")
-    print(f"  Time on ice per Player: \033[0;32m{time_on_ice_2:.2f} minutes\033[0m")
+    print(f"  Time on ice per Defense: \033[0;34m{time_on_ice_defense / 60:.2f} minutes\033[0m")  # Converted to minutes
 
 
 def main():
@@ -79,11 +67,10 @@ def main():
             print("You need at least 5 skaters to run a game.")
             return
 
-        shift_duration = int(input("Enter the shift duration (in seconds): "))
-        calculate_time(skaters, shift_duration)
+        calculate_time(skaters)
 
     except ValueError:
-        print("Please enter valid integers for skaters and shift duration.")
+        print("Please enter a valid integer for the number of skaters.")
 
 
 if __name__ == "__main__":
