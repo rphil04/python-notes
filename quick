@@ -1,50 +1,12 @@
-#!/usr/bin/env python3
-
-# Hockey Lineup Ice Time Calculator
-# =================================
-#
-# This script calculates the expected time on ice per player based on the number of
-# skaters available. The script only provides one strategy:
-#
-# Strategy: Set Positions
-#     Divides skaters into forwards and defense, then calculates the time
-#     on ice for each position.
-#
-# Functions:
-# ----------
-# calculate_time(skaters)
-#     Calculates and prints the time on ice for forwards and defense.
-#
-# Usage:
-# ------
-# Run the script and provide the number of skaters when prompted.
+import random
 
 def calculate_time(skaters):
     game_duration = 60  # Game duration in minutes
     total_game_time = game_duration * 60  # Convert game duration to seconds
 
     # Calculate the number of forwards and defense based on skaters
-    if skaters == 5:
-        forwards, defense = 3, 2
-    elif skaters == 6:
-        forwards, defense = 4, 2
-    elif skaters == 7:
-        forwards, defense = 4, 3
-    elif skaters in (8, 9):
-        forwards, defense = skaters - 3, 3
-    elif skaters == 10:
-        forwards, defense = 6, 4
-    elif skaters == 11:
-        forwards, defense = 7, 4
-    elif skaters == 12:
-        forwards, defense = 7, 5
-    elif skaters == 13:
-        forwards, defense = 8, 5
-    elif skaters in (14, 15):
-        forwards, defense = 9, skaters - 9
-    else:
-        forwards = skaters * 9 // 15
-        defense = skaters - forwards
+    forwards = skaters * 3 // 5
+    defense = skaters - forwards
 
     # Strategy: Set Positions
 
@@ -52,25 +14,139 @@ def calculate_time(skaters):
     time_on_ice_forward = total_game_time / (forwards / 3)
     time_on_ice_defense = total_game_time / (defense / 2)
 
-    print("\033[0;32mStrategy: Set Positions\033[0m")
-    print(f"  Number of Forwards: \033[0;32m{forwards}\033[0m")
+    print("\033[0;35mStrategy: Set Positions\033[0m")
+    print(f"  Number of Forwards: \033[0;32m{forwards}\033[0m") # ANSI colors in python
     print(f"  Time on ice per Forward: \033[0;32m{time_on_ice_forward / 60:.2f} minutes\033[0m")  # Converted to minutes
     print(f"  Number of Defense: \033[0;34m{defense}\033[0m")
     print(f"  Time on ice per Defense: \033[0;34m{time_on_ice_defense / 60:.2f} minutes\033[0m")  # Converted to minutes
 
 
+def generate_lineup(unavailable_players, flexible_players):
+    centers = ["Michael Belaen", "Thomas Hillebrand", "Gretchen Kjorstad", "Josh Rosenberg"]
+    right_wings = ["Bridget Gallagan", "Tyler VanEps", "Jim Francis"]
+    left_wings = ["Tom Kopischke", "Jesse Kimes", "Ryan Smith", "Nate Lee"]
+    right_defense = ["Trey Crooks", "Edward Joseph"]
+    left_defense = ["Robbie Phillips", "Joe Kluver"]
+
+    # Remove unavailable players from the lineup
+    centers = [player for player in centers if player not in unavailable_players]
+    right_wings = [player for player in right_wings if player not in unavailable_players]
+    left_wings = [player for player in left_wings if player not in unavailable_players]
+    right_defense = [player for player in right_defense if player not in unavailable_players]
+    left_defense = [player for player in left_defense if player not in unavailable_players]
+
+    # Track used players
+    used_players = set(centers + right_wings + left_wings + right_defense + left_defense)
+
+    # Define the function to add flexible players to a position if needed
+    def add_flexible_players(position_list, required_count, preferred_positions):
+        available_flexible_players = [player for player in flexible_players if
+                                      player not in unavailable_players and player not in used_players]
+        for player in available_flexible_players:
+            if len(position_list) >= required_count:
+                break
+            if any(pos in flexible_players[player] for pos in preferred_positions):
+                position_list.append(player)
+                used_players.add(player)
+
+    # Add flexible players to each position if needed
+    add_flexible_players(left_wings, 4, ['LW'])
+    add_flexible_players(right_wings, 4, ['RW'])
+    add_flexible_players(left_defense, 2, ['LD'])
+    add_flexible_players(right_defense, 2, ['RD'])
+
+    # Ensure all positions are filled, prioritizing core positions first
+    required_positions = {
+        "Centers": 3,
+        "Right Wings": 3,
+        "Left Wings": 3,
+        "Right Defense": 2,
+        "Left Defense": 2
+    }
+
+    def ensure_position_filled(position_list, required_count):
+        if len(position_list) < required_count:
+            available_flexible_players = [player for player in flexible_players if
+                                          player not in unavailable_players and player not in used_players]
+            for player in available_flexible_players:
+                if len(position_list) >= required_count:
+                    break
+                if any(pos in flexible_players[player] for pos in flexible_players[player]):
+                    position_list.append(player)
+                    used_players.add(player)
+
+    # Ensure positions are filled
+    ensure_position_filled(centers, required_positions["Centers"])
+    ensure_position_filled(right_wings, required_positions["Right Wings"])
+    ensure_position_filled(left_wings, required_positions["Left Wings"])
+    ensure_position_filled(right_defense, required_positions["Right Defense"])
+    ensure_position_filled(left_defense, required_positions["Left Defense"])
+
+    # Redistribute excess players if necessary
+    def redistribute_excess_players(excess_list, target_positions):
+        for player in excess_list:
+            for target in target_positions:
+                if len(target_positions[target]) < required_positions[target]:
+                    target_positions[target].append(player)
+                    used_players.add(player)
+                    break
+
+    # Redistribute centers if there are too many
+    if len(centers) > required_positions["Centers"]:
+        excess_centers = centers[required_positions["Centers"]:]
+        centers = centers[:required_positions["Centers"]]
+        redistribute_excess_players(excess_centers, {"Right Wings": right_wings, "Left Wings": left_wings})
+
+    # Determine available players
+    available_skaters = centers + right_wings + left_wings + right_defense + left_defense
+    skaters_count = len(available_skaters)
+
+    print("\033[0;36mLineup Based on Availability\033[0m")
+    print(f"  Available Skaters: {skaters_count}")
+    print(f"  Centers: {centers}")
+    print(f"  Right Wings: {right_wings}")
+    print(f"  Left Wings: {left_wings}")
+    print(f"  Right Defense: {right_defense}")
+    print(f"  Left Defense: {left_defense}")
+
+    # Randomize the starting lineup
+    starting_lineup = {
+        "Center": random.choice(centers),
+        "Right Wing": random.choice(right_wings),
+        "Left Wing": random.choice(left_wings),
+        "Right Defense": random.choice(right_defense),
+        "Left Defense": random.choice(left_defense)
+    }
+
+    print("\033[1;33mStarting Lineup\033[0m")
+    for position, player in starting_lineup.items():
+        print(f"  {position}: {player}")
+
+    return skaters_count
+
+
 def main():
-    print("Hockey Lineup Ice Time Calculator")
-    try:
-        skaters = int(input("Enter the number of skaters available: "))
-        if skaters < 5:
-            print("You need at least 5 skaters to run a game.")
-            return
+    print("Hockey Lineup Ice Time Calculator and Lineup Generator")
 
-        calculate_time(skaters)
+    unavailable_players = input("Enter the names of unavailable players separated by commas: ").split(',')
+    unavailable_players = [player.strip() for player in unavailable_players]  # Strip any whitespace
 
-    except ValueError:
-        print("Please enter a valid integer for the number of skaters.")
+    # Define flexible players (player name: [preferred positions])
+    flexible_players = {
+        "Josh Rosenberg": ["RW", "LW", "RD", "C"],
+        "Nate Lee": ["LW", "LD"],
+        "Tyler VanEps": ["RW", "LD", "RD"],
+        "Thomas Hillebrand": ["C", "RD"],
+        "Joe Kluver": ["LW", "LD"],
+    }
+
+    skaters = generate_lineup(unavailable_players, flexible_players)
+
+    if skaters < 5:
+        print("You need at least 5 skaters to run a game.")
+        return
+
+    calculate_time(skaters)
 
 
 if __name__ == "__main__":
