@@ -6,17 +6,21 @@
 #   availability and calculates the ice time for forwards 
 #   and defensemen based on the game duration.
 #
-#   The script also checks for invalid player names (due 
-#   to spelling errors) and prompts the user to re-enter 
-#   names if needed, ensuring that the lineup is generated 
-#   correctly with known players only.
+#   The script checks for invalid player names (due to 
+#   spelling errors) against a list of known players and 
+#   prompts the user to re-enter names if necessary, ensuring 
+#   that the lineup is generated correctly with known players only.
+#
+#   If any positions are underfilled due to unavailable players, 
+#   the script suggests available players to fill those positions, 
+#   allowing the user to assign them as needed.
 #
 # Key Functions:
 #   - calculate_time(forwards_count, defense_count):
 #       Calculates and displays the ice time per forward 
 #       and defenseman based on the total game duration.
 #
-#   - validate_player_names(player_names, known_players):
+#   - validate_player_names(player_names):
 #       Validates the provided player names against a list 
 #       of known players to detect any spelling errors.
 #
@@ -24,6 +28,9 @@
 #       Generates the hockey lineup based on available 
 #       players, fills any underfilled positions, and selects 
 #       a starting lineup randomly from available players.
+#
+#   - get_unavailable_players():
+#       Handles the input of unavailable players and their validation.
 #
 #   - main():
 #       Orchestrates the input, validation, lineup generation, 
@@ -38,183 +45,124 @@
 #!/usr/bin/env python3
 
 import random
+from enum import Enum
 
-# Function to calculate the time on ice for forwards and defensemen
+# Position Enum
+class Position(Enum):
+    CENTER = "Centers"
+    RIGHT_WING = "Right Wings"
+    LEFT_WING = "Left Wings"
+    RIGHT_DEFENSE = "Right Defense"
+    LEFT_DEFENSE = "Left Defense"
+
+# Constants
+GAME_DURATION_MINUTES = 60
+KNOWN_PLAYERS = [
+    "Michael Belaen", "Thomas Hillebrand", "Gretchen Kjorstad", "Bridget Gallagan",
+    "Tyler VanEps", "Jim Francis", "Josh Rosenberg", "Tom Kopischke",
+    "Jesse Kimes", "Ryan Smith", "Nate Lee", "Trey Crooks",
+    "Edward Joseph", "Robbie Phillips", "Joe Kluver"
+]
+
+# Calculates time on ice per player based on number of forwards and defense
 def calculate_time(forwards_count, defense_count):
-    game_duration = 60  # Game duration in minutes
-    total_game_time = game_duration * 60  # Convert game duration to seconds
-
-    # Calculate time on ice per forward and defenseman in seconds
+    total_game_time = GAME_DURATION_MINUTES * 60
     time_on_ice_forward = total_game_time / (forwards_count / 3)
     time_on_ice_defense = total_game_time / (defense_count / 2)
 
-    # Display the strategy for setting positions, including the number of players and their time on ice
     print("\033[0;35mStrategy: Set Positions\033[0m")
     print(f"  Number of Forwards: \033[0;32m{forwards_count}\033[0m")
     print(f"  Time on ice per Forward: \033[0;32m{time_on_ice_forward / 60:.2f} minutes\033[0m")
     print(f"  Number of Defense: \033[0;34m{defense_count}\033[0m")
     print(f"  Time on ice per Defense: \033[0;34m{time_on_ice_defense / 60:.2f} minutes\033[0m")
 
-# Function to validate player names against known players
-def validate_player_names(player_names, known_players):
-    invalid_names = [player for player in player_names if player not in known_players]
+# Validates player names against known players
+def validate_player_names(player_names):
+    invalid_names = [name for name in player_names if name not in KNOWN_PLAYERS]
     if invalid_names:
-        print(f"\033[0;31mError: The following names do not match any known player names: {', '.join(invalid_names)}. "
-              f"Please check the spelling and try again.\033[0m")
+        print("\033[0;31mInvalid player names detected:\033[0m", invalid_names)
+        print("Please check spelling and restart the script.")
         return False
     return True
 
-# Function to generate the lineup based on the availability of players
-def generate_lineup(unavailable_players):
-    # Define the initial lists of players by position
-    centers = ["Michael Belaen", "Thomas Hillebrand", "Gretchen Kjorstad"]
-    right_wings = ["Bridget Gallagan", "Tyler VanEps", "Jim Francis", "Josh Rosenberg"]
-    left_wings = ["Tom Kopischke", "Jesse Kimes", "Ryan Smith", "Nate Lee"]
-    right_defense = ["Trey Crooks", "Edward Joseph"]
-    left_defense = ["Robbie Phillips", "Joe Kluver"]
-
-    # Combine all players into one list for validation purposes
-    all_known_players = centers + right_wings + left_wings + right_defense + left_defense
-
-    # Validate the unavailable players
-    if not validate_player_names(unavailable_players, all_known_players):
-        return 0  # Return to prompt user to enter names again
-
-    # Remove unavailable players
-    centers = [player for player in centers if player not in unavailable_players]
-    right_wings = [player for player in right_wings if player not in unavailable_players]
-    left_wings = [player for player in left_wings if player not in unavailable_players]
-    right_defense = [player for player in right_defense if player not in unavailable_players]
-    left_defense = [player for player in left_defense if player not in unavailable_players]
-
-    # Track used players to avoid duplicates
-    used_players = set(centers + right_wings + left_wings + right_defense + left_defense)
-
-    # Count available skaters
-    available_skaters = len(centers + right_wings + left_wings + right_defense + left_defense)
-
-    # Adjust the required positions based on the number of available skaters
-    if available_skaters < 13:
-        required_positions = {
-            "Centers": 2,
-            "Right Wings": 2,
-            "Left Wings": 2,
-            "Right Defense": 2,
-            "Left Defense": 2
-        }
-    else:
-        required_positions = {
-            "Centers": 3,
-            "Right Wings": 3,
-            "Left Wings": 3,
-            "Right Defense": 2,
-            "Left Defense": 2
-        }
-
-    # Store the positions and their corresponding players in a dictionary
-    positions = {
-        "Centers": centers,
-        "Right Wings": right_wings,
-        "Left Wings": left_wings,
-        "Right Defense": right_defense,
-        "Left Defense": left_defense
-    }
-
-    # Function to remove a player from all positions
-    def remove_player_from_positions(player):
-        for pos in positions:
-            if player in positions[pos]:
-                positions[pos].remove(player)
-
-    # Function to get suggested players for a position
-    def get_suggested_players(position_name):
-        suggestions = {
-            "Centers": ["Josh Rosenberg", "Ryan Smith", "Bridget Gallagan"],
-            "Right Wings": ["Ryan Smith", "Michael Belaen", "Jesse Kimes", "Thomas Hillebrand", "Trey Crooks", "Edward Joseph"],
-            "Left Wings": ["Tyler VanEps", "Jim Francis", "Josh Rosenberg", "Joe Kluver", "Edward Joseph"],
-            "Right Defense": ["Tyler VanEps", "Thomas Hillebrand", "Nate Lee", "Josh Rosenberg"],
-            "Left Defense": ["Tyler VanEps", "Thomas Hillebrand", "Nate Lee", "Josh Rosenberg"]
-        }
-        return [player for player in suggestions.get(position_name, []) if player not in unavailable_players]
-
-    # Function to fill underfilled positions
-    def fill_underfilled_positions():
-        for pos, needed_count in required_positions.items():
-            while len(positions[pos]) < needed_count:
-                available_suggested_players = get_suggested_players(pos)
-                if not available_suggested_players:
-                    print(f"\033[0;31mNo available players to fill {pos}.\033[0m")
-                    break
-                print(f"\033[0;31m{pos} is underfilled.\033[0m")
-                print(f"\033[0;33mSuggested players: {available_suggested_players}\033[0m")
-                player_to_add = input(f"Please enter the name of a player to fill {pos}: ").strip()
-                if player_to_add in available_suggested_players:
-                    remove_player_from_positions(player_to_add)
-                    positions[pos].append(player_to_add)
-                    used_players.add(player_to_add)
-                else:
-                    print(f"{player_to_add} is not a valid choice or is already in use.")
-
-    # Fill underfilled positions with user input
-    fill_underfilled_positions()
-
-    # Recalculate the number of available skaters after adjustments
-    available_skaters = positions["Centers"] + positions["Right Wings"] + positions["Left Wings"] + \
-                        positions["Right Defense"] + positions["Left Defense"]
-    skaters_count = len(available_skaters)
-
-    # Count the number of forwards and defensemen
-    num_forwards = len(positions["Centers"]) + len(positions["Right Wings"]) + len(positions["Left Wings"])
-    num_defense = len(positions["Right Defense"]) + len(positions["Left Defense"])
-
-    # Display the final lineup based on availability
-    print("\033[0;36mLineup Based on Availability\033[0m")
-    print(f"  Available Skaters: {skaters_count}")
-    print(f"  Centers: {positions['Centers']}")
-    print(f"  Right Wings: {positions['Right Wings']}")
-    print(f"  Left Wings: {positions['Left Wings']}")
-    print(f"  Right Defense: {positions['Right Defense']}")
-    print(f"  Left Defense: {positions['Left Defense']}")
-
-    # Select the starting lineup randomly from the available players
-    starting_lineup = {
-        "Center": random.choice(positions["Centers"]),
-        "Right Wing": random.choice(positions["Right Wings"]),
-        "Left Wing": random.choice(positions["Left Wings"]),
-        "Right Defense": random.choice(positions["Right Defense"]),
-        "Left Defense": random.choice(positions["Left Defense"])
-    }
-
-    # Display the starting lineup
-    print("\033[1;33mStarting Lineup\033[0m")
-    for position, player in starting_lineup.items():
-        print(f"  {position}: {player}")
-
-    # Calculate and display the time on ice for forwards and defensemen
-    calculate_time(num_forwards, num_defense)
-
-    return skaters_count
-
-# Main function to run the lineup generator
-def main():
-    print("Hockey Lineup Generator and Lineup Ice Time Calculator")
-
-    # Prompt the user to input unavailable players
+# Handles the input of unavailable players and validation
+def get_unavailable_players():
     while True:
         unavailable_players = input("Enter the names of unavailable players separated by commas: ").split(',')
         unavailable_players = [player.strip() for player in unavailable_players]
+        if validate_player_names(unavailable_players):
+            return unavailable_players
 
-        skaters = generate_lineup(unavailable_players)
+# Generates the hockey lineup based on availability and user input
+def generate_lineup(unavailable_players):
+    positions = {
+        Position.CENTER: ["Michael Belaen", "Thomas Hillebrand", "Gretchen Kjorstad"],
+        Position.RIGHT_WING: ["Bridget Gallagan", "Tyler VanEps", "Jim Francis", "Josh Rosenberg"],
+        Position.LEFT_WING: ["Tom Kopischke", "Jesse Kimes", "Ryan Smith", "Nate Lee"],
+        Position.RIGHT_DEFENSE: ["Trey Crooks", "Edward Joseph"],
+        Position.LEFT_DEFENSE: ["Robbie Phillips", "Joe Kluver"]
+    }
 
-        # If the lineup generation is successful, break the loop
-        if skaters > 0:
-            break
+    # Remove unavailable players
+    for position_key in positions:
+        positions[position_key] = [player for player in positions[position_key] if player not in unavailable_players]
 
-    # Ensure there are enough skaters to play the game
-    if skaters < 5:
-        print("You need at least 5 skaters to run a game.")
-        return
+    # Count available skaters and adjust position requirements
+    available_skaters = sum(len(players) for players in positions.values())
+    required_positions = {position_key: 2 for position_key in positions} if available_skaters < 13 else {Position.CENTER: 3, Position.RIGHT_WING: 3, Position.LEFT_WING: 3, Position.RIGHT_DEFENSE: 2, Position.LEFT_DEFENSE: 2}
 
-# Entry point of the script
+    def remove_player_from_positions(player):
+        for position_key in positions:
+            if player in positions[position_key]:
+                positions[position_key].remove(player)
+
+    def get_suggested_players(position_key):
+        suggestions = {
+            Position.CENTER: ["Josh Rosenberg", "Ryan Smith", "Bridget Gallagan"],
+            Position.RIGHT_WING: ["Ryan Smith", "Michael Belaen", "Jesse Kimes", "Thomas Hillebrand", "Trey Crooks", "Edward Joseph"],
+            Position.LEFT_WING: ["Tyler VanEps", "Jim Francis", "Josh Rosenberg", "Joe Kluver", "Edward Joseph"],
+            Position.RIGHT_DEFENSE: ["Tyler VanEps", "Thomas Hillebrand", "Nate Lee", "Josh Rosenberg"],
+            Position.LEFT_DEFENSE: ["Tyler VanEps", "Thomas Hillebrand", "Nate Lee", "Josh Rosenberg"]
+        }
+        return [player for player in suggestions.get(position_key, []) if player not in unavailable_players]
+
+    # Fill underfilled positions
+    for position_key, needed_count in required_positions.items():
+        while len(positions[position_key]) < needed_count:
+            available_suggested_players = get_suggested_players(position_key)
+            if not available_suggested_players:
+                print(f"\033[0;31mNo available players to fill {position_key.value}.\033[0m")
+                break
+            print(f"\033[0;31m{position_key.value} is underfilled.\033[0m")
+            print(f"\033[0;33mSuggested players: {available_suggested_players}\033[0m")
+            player_to_add = input(f"Please enter the name of a player to fill {position_key.value}: ").strip()
+            if player_to_add in available_suggested_players:
+                remove_player_from_positions(player_to_add)
+                positions[position_key].append(player_to_add)
+            else:
+                print(f"{player_to_add} is not a valid choice or is already in use.")
+
+    num_forwards = sum(len(positions[position_key]) for position_key in [Position.CENTER, Position.RIGHT_WING, Position.LEFT_WING])
+    num_defense = sum(len(positions[position_key]) for position_key in [Position.RIGHT_DEFENSE, Position.LEFT_DEFENSE])
+
+    # Display lineup
+    print("\033[0;36mLineup Based on Availability\033[0m")
+    for position_key, players in positions.items():
+        print(f"  {position_key.value}: {players}")
+
+    starting_lineup = {position_key.name.replace("_", " ").title(): random.choice(players) for position_key, players in positions.items()}
+
+    print("\033[1;33mStarting Lineup\033[0m")
+    for position_name, player in starting_lineup.items():
+        print(f"  {position_name}: {player}")
+
+    calculate_time(num_forwards, num_defense)
+
+# Main function
+def main():
+    print("Hockey Lineup Generator and Ice Time Calculator")
+    unavailable_players = get_unavailable_players()
+    generate_lineup(unavailable_players)
+
 if __name__ == "__main__":
     main()
